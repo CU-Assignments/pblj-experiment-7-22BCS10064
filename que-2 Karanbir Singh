@@ -1,0 +1,221 @@
+public class Student {
+    private int studentID;
+    private String name;
+    private String department;
+    private double marks;
+
+    // Constructor
+    public Student(int studentID, String name, String department, double marks) {
+        this.studentID = studentID;
+        this.name = name;
+        this.department = department;
+        this.marks = marks;
+    }
+
+    // Getters and Setters
+    public int getStudentID() {
+        return studentID;
+    }
+
+    public void setStudentID(int studentID) {
+        this.studentID = studentID;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDepartment() {
+        return department;
+    }
+
+    public void setDepartment(String department) {
+        this.department = department;
+    }
+
+    public double getMarks() {
+        return marks;
+    }
+
+    public void setMarks(double marks) {
+        this.marks = marks;
+    }
+}
+import java.sql.*;
+
+public class StudentController {
+    private static final String URL = "jdbc:mysql://localhost:3306/StudentDB";
+    private static final String USER = "your_username";
+    private static final String PASSWORD = "your_password";
+
+    // Method to create a new student record
+    public static void createStudent(Student student) {
+        String query = "INSERT INTO Student (Name, Department, Marks) VALUES (?, ?, ?)";
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setString(1, student.getName());
+            ps.setString(2, student.getDepartment());
+            ps.setDouble(3, student.getMarks());
+            ps.executeUpdate();
+            System.out.println("Student record created successfully.");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Method to read a student's data by StudentID
+    public static Student readStudent(int studentID) {
+        String query = "SELECT * FROM Student WHERE StudentID = ?";
+        Student student = null;
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setInt(1, studentID);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                student = new Student(
+                        rs.getInt("StudentID"),
+                        rs.getString("Name"),
+                        rs.getString("Department"),
+                        rs.getDouble("Marks")
+                );
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return student;
+    }
+
+    // Method to update a student's data
+    public static void updateStudent(Student student) {
+        String query = "UPDATE Student SET Name = ?, Department = ?, Marks = ? WHERE StudentID = ?";
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setString(1, student.getName());
+            ps.setString(2, student.getDepartment());
+            ps.setDouble(3, student.getMarks());
+            ps.setInt(4, student.getStudentID());
+            ps.executeUpdate();
+            System.out.println("Student record updated successfully.");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Method to delete a student record
+    public static void deleteStudent(int studentID) {
+        String query = "DELETE FROM Student WHERE StudentID = ?";
+        try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
+             PreparedStatement ps = conn.prepareStatement(query)) {
+            ps.setInt(1, studentID);
+            ps.executeUpdate();
+            System.out.println("Student record deleted successfully.");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+}
+import java.util.Scanner;
+
+public class StudentView {
+    private static final Scanner scanner = new Scanner(System.in);
+
+    // Display menu
+    public static void displayMenu() {
+        System.out.println("\nStudent Management System");
+        System.out.println("1. Create Student");
+        System.out.println("2. Read Student");
+        System.out.println("3. Update Student");
+        System.out.println("4. Delete Student");
+        System.out.println("5. Exit");
+        System.out.print("Enter your choice: ");
+    }
+
+    // Get student details from the user
+    public static Student getStudentDetails() {
+        System.out.print("Enter Name: ");
+        String name = scanner.nextLine();
+        System.out.print("Enter Department: ");
+        String department = scanner.nextLine();
+        System.out.print("Enter Marks: ");
+        double marks = scanner.nextDouble();
+        return new Student(0, name, department, marks); // studentID is 0 for create operation
+    }
+
+    // Get student ID from the user
+    public static int getStudentID() {
+        System.out.print("Enter Student ID: ");
+        return scanner.nextInt();
+    }
+
+    // Display student details
+    public static void displayStudent(Student student) {
+        if (student != null) {
+            System.out.println("\nStudent Details:");
+            System.out.println("StudentID: " + student.getStudentID());
+            System.out.println("Name: " + student.getName());
+            System.out.println("Department: " + student.getDepartment());
+            System.out.println("Marks: " + student.getMarks());
+        } else {
+            System.out.println("Student not found.");
+        }
+    }
+}
+import java.util.Scanner;
+
+public class StudentApp {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        while (true) {
+            StudentView.displayMenu();
+            int choice = scanner.nextInt();
+            scanner.nextLine(); // Consume newline character
+
+            switch (choice) {
+                case 1: {
+                    // Create student
+                    Student newStudent = StudentView.getStudentDetails();
+                    StudentController.createStudent(newStudent);
+                    break;
+                }
+                case 2: {
+                    // Read student
+                    int studentID = StudentView.getStudentID();
+                    Student student = StudentController.readStudent(studentID);
+                    StudentView.displayStudent(student);
+                    break;
+                }
+                case 3: {
+                    // Update student
+                    int studentID = StudentView.getStudentID();
+                    Student existingStudent = StudentController.readStudent(studentID);
+                    if (existingStudent != null) {
+                        System.out.println("Updating student data.");
+                        Student updatedStudent = StudentView.getStudentDetails();
+                        updatedStudent.setStudentID(studentID);
+                        StudentController.updateStudent(updatedStudent);
+                    } else {
+                        System.out.println("Student not found.");
+                    }
+                    break;
+                }
+                case 4: {
+                    // Delete student
+                    int studentID = StudentView.getStudentID();
+                    StudentController.deleteStudent(studentID);
+                    break;
+                }
+                case 5: {
+                    // Exit
+                    System.out.println("Exiting the application.");
+                    return;
+                }
+                default:
+                    System.out.println("Invalid choice. Please try again.");
+            }
+        }
+    }
+}
